@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Transparency Laws — Data Center Water Leaks</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f8fafc; color: #1e293b; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        header { width: 100%; padding: 40px 0; background: #fff; border-bottom: 1px solid #e2e8f0; text-align: center; }
+        .logo-box { width: 120px; height: 120px; background: white; border-radius: 50%; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .logo-box:hover { transform: scale(1.02); }
+        .logo-box img { width: 85%; height: auto; }
+
+        .page-wrap { max-width: 1100px; width: 90%; }
+
+        .page-title { font-size: 2rem; font-weight: 800; margin: 40px 0 6px; color: #0f172a; text-align: center; }
+        .page-subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
+
+        /* Tabs */
+        .tab-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; }
+        .tab-btn { border: 1px solid #e2e8f0; background: #fff; color: #475569; padding: 12px 28px; border-radius: 999px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.15s; }
+        .tab-btn:hover { border-color: #6366f1; color: #6366f1; }
+        .tab-btn.active { background: #6366f1; border-color: #6366f1; color: #fff; box-shadow: 0 6px 16px rgba(99,102,241,0.25); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Cards / sections shared look */
+        .section-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 32px; margin-bottom: 30px; box-sizing: border-box; }
+        .section-box h2 { margin: 0 0 6px; font-size: 1.25rem; color: #0f172a; }
+        .section-box .section-note { color: #64748b; font-size: 0.9rem; margin: 0 0 20px; }
+
+        /* State tab: map embed */
+        .map-embed-wrap { border-radius: 14px; overflow: hidden; border: 1px solid #e2e8f0; }
+
+        /* Stat tiles */
+        .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px; margin-bottom: 30px; }
+        .stat-tile { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; text-align: center; }
+        .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #64748b; font-weight: 700; margin-bottom: 8px; }
+        .stat-value { font-size: 30px; font-weight: 800; color: #0f172a; font-variant-numeric: proportional-nums; }
+        .stat-unit { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+        /* Timeline chart: stacked columns, bills introduced per month */
+        .viz-root { color-scheme: light; --surface-1: #fcfcfb; --text-primary: #0f172a; --text-secondary: #64748b; --series-house: #2a78d6; --series-senate: #eb6834; }
+        .timeline-legend { display: flex; gap: 22px; justify-content: center; margin-bottom: 14px; font-size: 0.85rem; color: var(--text-secondary); }
+        .legend-key { display: flex; align-items: center; gap: 7px; }
+        .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+        .legend-swatch.house { background: var(--series-house); }
+        .legend-swatch.senate { background: var(--series-senate); }
+        #timelineSvg { width: 100%; height: auto; display: block; }
+        .tl-axis-label { fill: var(--text-secondary); font-size: 11px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .tl-ytick-label { fill: var(--text-secondary); font-size: 10px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .tl-bar-seg { cursor: pointer; }
+        .tl-value-label { fill: var(--text-primary); font-size: 11px; font-weight: 700; font-family: 'Segoe UI', Tahoma, sans-serif; text-anchor: middle; }
+        .tl-gridline { stroke: #e2e8f0; stroke-width: 1; }
+        .tl-baseline { stroke: #cbd5e1; stroke-width: 1; }
+
+        .tl-tooltip { position: absolute; display: none; background: #0f172a; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 0.8rem; line-height: 1.5; max-width: 260px; pointer-events: auto; box-shadow: 0 8px 20px rgba(0,0,0,0.25); z-index: 20; }
+        .tl-tooltip strong { display: block; margin-bottom: 3px; font-size: 0.85rem; }
+        .tl-tooltip .tl-bill-row { margin-top: 2px; }
+        .timeline-wrap { position: relative; }
+
+        /* Table */
+        .table-controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+        .table-search { flex: 1; min-width: 220px; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-family: inherit; }
+        .table-search:focus { outline: none; border-color: #6366f1; }
+        .chamber-filter { display: flex; gap: 8px; }
+        .chip { border: 1px solid #e2e8f0; background: #fff; padding: 8px 16px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; cursor: pointer; color: #475569; }
+        .chip.active { background: #eef2ff; border-color: #6366f1; color: #4338ca; }
+        .table-scroll { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; }
+        table.bill-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 760px; }
+        table.bill-table th { text-align: left; background: #f8fafc; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 14px; border-bottom: 1px solid #e2e8f0; cursor: pointer; white-space: nowrap; user-select: none; }
+        table.bill-table th:hover { color: #6366f1; }
+        table.bill-table th .arrow { font-size: 10px; margin-left: 4px; opacity: 0.5; }
+        table.bill-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: top; color: #1e293b; }
+        table.bill-table tr:last-child td { border-bottom: none; }
+        table.bill-table tr:hover td { background: #f8fafc; }
+        .chamber-pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; color: #fff; }
+        .chamber-pill.house { background: #2a78d6; }
+        .chamber-pill.senate { background: #eb6834; }
+        .party-pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+        .party-pill.d { background: #dbeafe; color: #1d4ed8; }
+        .party-pill.r { background: #fee2e2; color: #b91c1c; }
+        .party-pill.i { background: #ede9fe; color: #6d28d9; }
+        .status-tag { font-size: 0.78rem; color: #475569; }
+        .status-tag.advanced { color: #0f766e; font-weight: 700; }
+        .no-results { text-align: center; padding: 30px; color: #94a3b8; font-size: 0.9rem; }
+
+        .back-link { display: inline-block; margin: 10px 0 40px; color: #6366f1; font-weight: 700; text-decoration: none; font-size: 0.9rem; }
+        .back-link:hover { text-decoration: underline; }
+
+        .bill-link { color: #4338ca; text-decoration: none; font-weight: 700; }
+        .bill-link:hover { text-decoration: underline; }
+
+        /* Model Law tab */
+        .law-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 6px; }
+        .law-card { display: flex; flex-direction: column; padding: 26px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; box-sizing: border-box; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+        .law-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.06); border-color: #6366f1; }
+        .law-card .bill-tag { display: inline-block; align-self: flex-start; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 999px; background: #e0e7ff; color: #4338ca; margin-bottom: 14px; }
+        .law-card h3 { margin: 0 0 10px 0; font-size: 1.1rem; color: #0f172a; line-height: 1.35; }
+        .law-card > p { font-size: 0.9rem; color: #64748b; margin: 0 0 16px 0; line-height: 1.55; }
+        .law-points { padding-left: 20px; margin: 0 0 22px 0; color: #475569; font-size: 0.85rem; line-height: 1.6; }
+        .law-points li { margin-bottom: 6px; }
+        .law-download { align-self: flex-start; margin-top: auto; background: #6366f1; color: #fff; padding: 10px 22px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer; display: inline-block; text-decoration: none; }
+        .law-download:hover { background: #4f46e5; }
+
+        /* FOOTER — matches index.html */
+        footer { background: #fff; width: 100%; border-top: 1px solid #e2e8f0; padding: 60px 0; margin-top: auto; }
+        .footer-container { max-width: 1100px; width: 90%; margin: 0 auto; }
+        .footer-section { width: 100%; text-align: center; }
+        .footer-section h3 { font-size: 1.4rem; color: #0f172a; margin-bottom: 15px; }
+        .footer-section p.disclaimer { font-size: 0.9rem; color: #94a3b8; max-width: 800px; margin: 0 auto 40px; line-height: 1.6; }
+        .support-box {
+            background: #ffffff;
+            padding: 41px;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            border-top: 4px solid #6366f1;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.04);
+            width: 100%;
+            box-sizing: border-box;
+            max-width: 700px;
+            margin: 20px auto 0;
+        }
+        .support-box h3 { color: #1e293b; margin-top: 0; }
+        .support-box p { color: #64748b; margin-bottom: 30px; font-size: 1rem; }
+        .gfm-embed { margin: 0 auto; display: inline-block; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="../index.html" style="text-decoration: none;">
+            <div class="logo-box"><img src="../logo.png" alt="Logo"></div>
+        </a>
+        <p style="font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-size: 13px;">Data Center Water Transparency</p>
+    </header>
+
+    <div class="page-wrap">
+        <a class="back-link" href="../index.html">&larr; Back to dashboard</a>
+        <h1 class="page-title">Water Transparency Laws</h1>
+        <p class="page-subtitle">Tracking legislative progress on mandatory water reporting for data centers — state and federal.</p>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" data-tab="state">State Law</button>
+            <button class="tab-btn" data-tab="federal">Federal Law</button>
+            <button class="tab-btn" data-tab="model">Model Law</button>
+        </div>
+
+        <!-- STATE TAB -->
+        <div class="tab-panel active" id="tab-state">
+            <div class="section-box">
+                <h2>State-by-state tracker</h2>
+                <p class="section-note">Data center water-disclosure and reporting bills introduced across state legislatures. Click a state for bill-level detail.</p>
+                <div class="map-embed-wrap">
+                    <div class="flourish-embed flourish-map" data-src="visualisation/27352160"><script src="https://public.flourish.studio/resources/embed.js"></script><noscript><img src="https://public.flourish.studio/visualisation/27352160/thumbnail" width="100%" alt="map visualization" /></noscript></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FEDERAL TAB -->
+        <div class="tab-panel" id="tab-federal">
+
+            <div class="stat-row">
+                <div class="stat-tile">
+                    <div class="stat-label">Bills Tracked</div>
+                    <div class="stat-value">20</div>
+                    <div class="stat-unit">119th Congress</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">House / Senate</div>
+                    <div class="stat-value">14 / 6</div>
+                    <div class="stat-unit">bills by chamber</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">Party of Sponsor</div>
+                    <div class="stat-value">12D · 7R · 1I</div>
+                    <div class="stat-unit">by sponsor</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">Cosponsor Signatures</div>
+                    <div class="stat-value">134</div>
+                    <div class="stat-unit">across 11 of 20 bills</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">Advanced Beyond Referral</div>
+                    <div class="stat-value">3</div>
+                    <div class="stat-unit">hearings held or reported</div>
+                </div>
+            </div>
+
+            <div class="section-box viz-root">
+                <h2>Bills introduced per month</h2>
+                <p class="section-note">Each column is one month; hover a segment for the bills introduced that month, with links to congress.gov.</p>
+                <div class="timeline-legend">
+                    <span class="legend-key"><span class="legend-swatch house"></span>House</span>
+                    <span class="legend-key"><span class="legend-swatch senate"></span>Senate</span>
+                </div>
+                <div class="timeline-wrap">
+                    <svg id="timelineSvg" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet"></svg>
+                    <div class="tl-tooltip" id="tlTooltip"></div>
+                </div>
+            </div>
+
+            <div class="section-box">
+                <h2>All tracked bills</h2>
+                <p class="section-note">Search or filter by chamber; click a column heading to sort.</p>
+                <div class="table-controls">
+                    <input type="text" class="table-search" id="billSearch" placeholder="Search bill number, title, or sponsor…">
+                    <div class="chamber-filter" id="chamberFilter">
+                        <button class="chip active" data-chamber="all">All</button>
+                        <button class="chip" data-chamber="House">House</button>
+                        <button class="chip" data-chamber="Senate">Senate</button>
+                    </div>
+                </div>
+                <div class="table-scroll">
+                    <table class="bill-table" id="billTable">
+                        <thead>
+                            <tr>
+                                <th data-key="bill">Bill<span class="arrow"></span></th>
+                                <th data-key="short_title">Short Title<span class="arrow"></span></th>
+                                <th data-key="sponsor">Sponsor<span class="arrow"></span></th>
+                                <th data-key="party">Party<span class="arrow"></span></th>
+                                <th data-key="cosponsor_count">Cosponsors<span class="arrow"></span></th>
+                                <th data-key="intro_date_sort">Introduced<span class="arrow"></span></th>
+                                <th data-key="status">Status<span class="arrow"></span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="billTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="no-results" id="noResults" style="display:none;">No bills match your search.</div>
+            </div>
+        </div>
+
+        <!-- MODEL LAW TAB -->
+        <div class="tab-panel" id="tab-model">
+            <div class="section-box">
+                <h2>Model Legislation</h2>
+                <p class="section-note">Two ready-to-introduce model bills that close the gap this campaign keeps running into: a "water-positive" claim that no one outside the company can check.</p>
+
+                <div class="law-grid">
+                    <div class="law-card">
+                        <span class="bill-tag">Model Bill 01</span>
+                        <h3>Model Industrial Water Offset Act</h3>
+                        <p>Creates a state-administered, credit-based offset system for industrial water withdrawals, modeled on wetland mitigation banking. An Interagency Water Offset Review Board (IWORB) certifies offset projects and releases credits only after performance standards are actually met &mdash; not on a developer's projection.</p>
+                        <ul class="law-points">
+                            <li>Applies to facilities withdrawing over 50 million gallons/year, or any publicly traded company over 10 MGY</li>
+                            <li>Mitigation sequencing required: avoid and minimize withdrawals before any offset credit can be purchased</li>
+                            <li>Credits quantified under Volumetric Water Benefit Accounting (VWBA), a six-step, third-party-verifiable methodology</li>
+                            <li>A public ledger tracks every credit from release through debit, so the same gallon can't be sold twice</li>
+                            <li>Debit ratios scale with hydrological stress and timing &mdash; not a flat 1:1 trade</li>
+                            <li>Annual compliance reports are posted publicly; a governor's drought declaration triggers automatic credit review</li>
+                        </ul>
+                        <a href="../docs/Model_Industrial_Water_Offset_Act.docx" target="_blank" class="law-download">Download Model Bill (.docx)</a>
+                    </div>
+
+                    <div class="law-card">
+                        <span class="bill-tag">Model Bill 02</span>
+                        <h3>Model Water Sustainability Disclosure Act</h3>
+                        <p>A lighter companion bill: mandatory annual water disclosure for large water users, so regulators and the public can check a "water-positive" or "water-neutral" claim against the same data set the Offset Act's registry produces &mdash; even in states that never adopt the credit system.</p>
+                        <ul class="law-points">
+                            <li>Same coverage threshold as the Offset Act: over 50 MGY, or any publicly traded company operating in the state</li>
+                            <li>Requires watershed-level reporting (HydroBASINS Level 6 / HUC-8) of withdrawals, consumptive use, and discharges</li>
+                            <li>An offset counts only if it's independently verified, hydrologically connected to the withdrawal, and department-approved</li>
+                            <li>Reports and every offset disclosure are posted on the department's public website</li>
+                            <li>Civil penalties up to $25,000 per violation per day for a false or missing filing</li>
+                        </ul>
+                        <a href="../docs/Model_Water_Sustainability_Disclosure_Act.docx" target="_blank" class="law-download">Download Model Bill (.docx)</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>Data Disclaimer and Support</h3>
+                <p style="margin:0 0 18px"><button type="button" class="nl-open-btn" onclick="nlOpen('footer')">📬 Subscribe to the newsletter</button></p>
+                <p class="disclaimer">The information presented is compiled from verified FOIA requests and corporate sustainability reports. All information is provided "as is".</p>
+                <p style="margin:-24px 0 30px;font-size:0.85rem"><a href="terms.html" style="color:#64748b">Terms &amp; Refund Policy</a></p>
+                <div class="support-box">
+                    <h3>Support This Project</h3>
+                    <p>Your contribution helps cover FOIA fees and technology costs required to keep this data public.</p>
+                    <div class="gfm-embed" data-url="https://www.gofundme.com/f/transparency-for-data-center-water-use/widget/small"></div>
+                    <script defer src="https://www.gofundme.com/static/js/embed.js"></script>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const BILLS = [{"bill": "H.R. 2940", "short_title": "Advancing Water Reuse Act", "sponsor": "Darin LaHood", "party": "R", "chamber": "House", "intro_date": "4/17/2025", "cosponsor_count": 25, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/2940"}, {"bill": "H.R. 5227", "short_title": "Unleashing Low-Cost Rural AI Act", "sponsor": "Jim Costa", "party": "D", "chamber": "House", "intro_date": "9/9/2025", "cosponsor_count": 6, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/5227"}, {"bill": "H.R. 5332", "short_title": "Liquid Cooling for AI Act of 2025", "sponsor": "Jay Obernolte", "party": "R", "chamber": "House", "intro_date": "9/11/2025", "cosponsor_count": 11, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/5332"}, {"bill": "H.R. 6900", "short_title": "American Affordability Act of 2025", "sponsor": "Mike Thompson", "party": "D", "chamber": "House", "intro_date": "12/18/2025", "cosponsor_count": 46, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/6900"}, {"bill": "H.R. 6984", "short_title": "Data Center Transparency Act", "sponsor": "Robert Menendez", "party": "D", "chamber": "House", "intro_date": "1/8/2026", "cosponsor_count": 10, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/6984"}, {"bill": "H.R. 7858", "short_title": "Data Center Community Impact Act", "sponsor": "Bonnie Watson Coleman", "party": "D", "chamber": "House", "intro_date": "3/5/2026", "cosponsor_count": 15, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/7858"}, {"bill": "H.R. 8033", "short_title": "No Harm Data Centers Act", "sponsor": "Greg Landsman", "party": "D", "chamber": "House", "intro_date": "3/20/2026", "cosponsor_count": 1, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/8033"}, {"bill": "H.R. 9372", "short_title": "Data Infrastructure Energy Measurement and Standards Act", "sponsor": "Suhas Subramanyam", "party": "D", "chamber": "House", "intro_date": "6/18/2026", "cosponsor_count": 2, "status": "Ordered reported, amended, 6/25/2026", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/9372"}, {"bill": "H.R. 9419", "short_title": "Power and Water for Families Act of 2026", "sponsor": "Michael Baumgartner", "party": "R", "chamber": "House", "intro_date": "6/24/2026", "cosponsor_count": 0, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/9419"}, {"bill": "H.R. 9442", "short_title": "Artificial Intelligence Data Center Moratorium Act", "sponsor": "Alexandria Ocasio-Cortez", "party": "D", "chamber": "House", "intro_date": "6/24/2026", "cosponsor_count": 13, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/9442"}, {"bill": "H.R. 9629", "short_title": "Protecting Communities from Data Center Impacts Act of 2026", "sponsor": "Greg Landsman", "party": "D", "chamber": "House", "intro_date": "7/9/2026", "cosponsor_count": 0, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/9629"}, {"bill": "H.R. 9777", "short_title": "Protecting Ratepayers Act", "sponsor": "Byron Donalds", "party": "R", "chamber": "House", "intro_date": "7/20/2026", "cosponsor_count": 0, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/9777"}, {"bill": "H.R. 9825", "short_title": "Data Center Water and Energy Transparency Act of 2026", "sponsor": "Lauren Underwood", "party": "D", "chamber": "House", "intro_date": "7/22/2026", "cosponsor_count": 0, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/9825"}, {"bill": "S. 4213", "short_title": "Data Center Water and Energy Transparency Act of 2026", "sponsor": "Richard J. Durbin", "party": "D", "chamber": "Senate", "intro_date": "3/25/2026", "cosponsor_count": 0, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/senate-bill/4213"}, {"bill": "S. 4214", "short_title": "Artificial Intelligence Data Center Moratorium Act", "sponsor": "Bernard Sanders", "party": "I", "chamber": "Senate", "intro_date": "3/25/2026", "cosponsor_count": 0, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/senate-bill/4214"}, {"bill": "S. 5054", "short_title": "Data Center Tax Accountability and Disclosure Act of 2026", "sponsor": "Mark R. Warner", "party": "D", "chamber": "Senate", "intro_date": "7/21/2026", "cosponsor_count": 0, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/senate-bill/5054"}, {"bill": "H.R. 8037", "short_title": "Protect American AI Act of 2026", "sponsor": "Michael Baumgartner", "party": "R", "chamber": "House", "intro_date": "3/24/2026", "cosponsor_count": 0, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/house-bill/8037"}, {"bill": "S. 3269", "short_title": "Liquid Cooling for AI Act of 2025", "sponsor": "David McCormick", "party": "R", "chamber": "Senate", "intro_date": "11/20/2025", "cosponsor_count": 3, "status": "Hearings held (Subcommittee on Energy, 4/15/2026)", "congress_url": "https://www.congress.gov/bill/119th-congress/senate-bill/3269"}, {"bill": "S. 3737", "short_title": "GROW SMART Act (Growing Resilient Operations from Water Saving and Municipal-Agricultural Reciprocally-beneficial Transactions Act)", "sponsor": "Alex Padilla", "party": "D", "chamber": "Senate", "intro_date": "1/29/2026", "cosponsor_count": 0, "status": "Hearings held (Subcommittee on Water and Power, 3/17/2026)", "congress_url": "https://www.congress.gov/bill/119th-congress/senate-bill/3737"}, {"bill": "S. 3852", "short_title": "GRID Act (Guaranteeing Rate Insulation from Data Centers Act)", "sponsor": "Josh Hawley", "party": "R", "chamber": "Senate", "intro_date": "2/11/2026", "cosponsor_count": 2, "status": "Referred", "congress_url": "https://www.congress.gov/bill/119th-congress/senate-bill/3852"}];
+
+        // ---- Tabs ----
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ---- Timeline: bills introduced per month, stacked by chamber ----
+        function parseDate(s) {
+            const [m, d, y] = s.split('/').map(Number);
+            return new Date(y, m - 1, d);
+        }
+        BILLS.forEach(b => {
+            const dt = parseDate(b.intro_date);
+            b.intro_date_sort = dt.getTime();
+            b.month_key = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
+        });
+
+        function buildMonthBuckets() {
+            const dates = BILLS.map(b => parseDate(b.intro_date));
+            const minDt = new Date(Math.min(...dates));
+            const maxDt = new Date(Math.max(...dates));
+            const buckets = [];
+            let y = minDt.getFullYear(), m = minDt.getMonth();
+            while (y < maxDt.getFullYear() || (y === maxDt.getFullYear() && m <= maxDt.getMonth())) {
+                const key = y + '-' + String(m + 1).padStart(2, '0');
+                buckets.push({
+                    key,
+                    label: new Date(y, m, 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                    House: BILLS.filter(b => b.month_key === key && b.chamber === 'House'),
+                    Senate: BILLS.filter(b => b.month_key === key && b.chamber === 'Senate'),
+                });
+                m++;
+                if (m > 11) { m = 0; y++; }
+            }
+            return buckets;
+        }
+
+        function renderTimeline() {
+            const svg = document.getElementById('timelineSvg');
+            const buckets = buildMonthBuckets();
+            const W = 1000, H = 300, padL = 36, padR = 16, padTop = 20, padBottom = 46;
+            const plotH = H - padTop - padBottom;
+            const maxCount = Math.max(1, ...buckets.map(b => b.House.length + b.Senate.length));
+            const yMax = Math.max(2, Math.ceil(maxCount / 2) * 2); // round to even ceiling for clean ticks
+            const yScale = v => padTop + plotH - (v / yMax) * plotH;
+
+            const n = buckets.length;
+            const slot = (W - padL - padR) / n;
+            const barW = Math.min(24, slot * 0.55);
+            const gap = 2;
+
+            let parts = [];
+
+            // y gridlines / ticks (integers)
+            for (let v = 0; v <= yMax; v++) {
+                const py = yScale(v);
+                parts.push(`<line class="tl-gridline" x1="${padL}" y1="${py}" x2="${W - padR}" y2="${py}" />`);
+                parts.push(`<text class="tl-ytick-label" x="${padL - 8}" y="${py + 3}" text-anchor="end">${v}</text>`);
+            }
+            parts.push(`<line class="tl-baseline" x1="${padL}" y1="${yScale(0)}" x2="${W - padR}" y2="${yScale(0)}" />`);
+
+            buckets.forEach((b, i) => {
+                const cx = padL + slot * i + slot / 2;
+                const x0 = cx - barW / 2;
+                const total = b.House.length + b.Senate.length;
+
+                // House segment (bottom), Senate segment stacked on top, 2px surface gap between
+                let cursorVal = 0;
+                if (b.House.length) {
+                    const y1 = yScale(cursorVal), y0 = yScale(cursorVal + b.House.length);
+                    parts.push(`<rect class="tl-bar-seg" data-key="${b.key}" data-chamber="House" x="${x0}" y="${y0}" width="${barW}" height="${Math.max(0, y1 - y0 - (b.Senate.length ? gap : 0))}" rx="4" fill="var(--series-house)"></rect>`);
+                    cursorVal += b.House.length;
+                }
+                if (b.Senate.length) {
+                    const y1 = yScale(cursorVal), y0 = yScale(cursorVal + b.Senate.length);
+                    parts.push(`<rect class="tl-bar-seg" data-key="${b.key}" data-chamber="Senate" x="${x0}" y="${y0}" width="${barW}" height="${Math.max(0, y1 - y0)}" rx="4" fill="var(--series-senate)"></rect>`);
+                }
+                if (total > 0) {
+                    parts.push(`<text class="tl-value-label" x="${cx}" y="${yScale(total) - 8}">${total}</text>`);
+                }
+                parts.push(`<text class="tl-axis-label" x="${cx}" y="${H - padBottom + 20}" text-anchor="middle">${b.label}</text>`);
+            });
+
+            svg.innerHTML = parts.join('');
+
+            // ---- tooltip: hoverable + clickable links, works across bar -> tooltip ----
+            const tooltip = document.getElementById('tlTooltip');
+            let hideTimer = null;
+            const cancelHide = () => { if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; } };
+            const scheduleHide = () => { cancelHide(); hideTimer = setTimeout(() => { tooltip.style.display = 'none'; }, 180); };
+
+            function tooltipHTML(bucket, chamber) {
+                const list = bucket[chamber];
+                const header = `${chamber} — ${bucket.label} (${list.length} bill${list.length === 1 ? '' : 's'})`;
+                const rows = list.map(bl => `<div class="tl-bill-row">&bull; <a class="bill-link" style="color:#93c5fd" href="${bl.congress_url}" target="_blank" rel="noopener">${bl.bill}</a> — ${bl.short_title}</div>`).join('');
+                return `<strong>${header}</strong>${rows}`;
+            }
+
+            svg.querySelectorAll('.tl-bar-seg').forEach(seg => {
+                seg.addEventListener('mousemove', (e) => {
+                    cancelHide();
+                    const bucket = buckets.find(b => b.key === seg.dataset.key);
+                    const wrap = document.querySelector('.timeline-wrap').getBoundingClientRect();
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = Math.min(e.clientX - wrap.left + 14, wrap.width - 260) + 'px';
+                    tooltip.style.top = (e.clientY - wrap.top - 10) + 'px';
+                    tooltip.innerHTML = tooltipHTML(bucket, seg.dataset.chamber);
+                });
+                seg.addEventListener('mouseleave', scheduleHide);
+            });
+            tooltip.addEventListener('mouseenter', cancelHide);
+            tooltip.addEventListener('mouseleave', scheduleHide);
+        }
+        renderTimeline();
+
+        // ---- Table ----
+        let sortKey = 'intro_date_sort';
+        let sortDir = 1;
+        let chamberFilterVal = 'all';
+
+        function partyClass(p) { return p === 'D' ? 'd' : p === 'R' ? 'r' : 'i'; }
+
+        function renderTable() {
+            const q = document.getElementById('billSearch').value.trim().toLowerCase();
+            let rows = BILLS.filter(b => {
+                const matchesChamber = chamberFilterVal === 'all' || b.chamber === chamberFilterVal;
+                const matchesQuery = !q || (b.bill + ' ' + b.short_title + ' ' + b.sponsor).toLowerCase().includes(q);
+                return matchesChamber && matchesQuery;
+            });
+            rows.sort((a, b) => {
+                let av = a[sortKey], bv = b[sortKey];
+                if (typeof av === 'string') { av = av.toLowerCase(); bv = bv.toLowerCase(); }
+                if (av < bv) return -1 * sortDir;
+                if (av > bv) return 1 * sortDir;
+                return 0;
+            });
+
+            const tbody = document.getElementById('billTableBody');
+            document.getElementById('noResults').style.display = rows.length ? 'none' : 'block';
+            tbody.innerHTML = rows.map(b => `
+                <tr>
+                    <td><span class="chamber-pill ${b.chamber.toLowerCase()}">${b.chamber === 'House' ? 'HR' : 'SEN'}</span> <a class="bill-link" href="${b.congress_url}" target="_blank" rel="noopener">${b.bill}</a></td>
+                    <td>${b.short_title}</td>
+                    <td>${b.sponsor}</td>
+                    <td><span class="party-pill ${partyClass(b.party)}">${b.party}</span></td>
+                    <td>${b.cosponsor_count}</td>
+                    <td>${b.intro_date}</td>
+                    <td><span class="status-tag ${/referred/i.test(b.status) ? '' : 'advanced'}">${b.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        document.querySelectorAll('#billTable th').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.dataset.key;
+                if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+                document.querySelectorAll('#billTable th .arrow').forEach(a => a.textContent = '');
+                th.querySelector('.arrow').textContent = sortDir === 1 ? '▲' : '▼';
+                renderTable();
+            });
+        });
+        document.getElementById('billSearch').addEventListener('input', renderTable);
+        document.getElementById('chamberFilter').addEventListener('click', (e) => {
+            if (!e.target.classList.contains('chip')) return;
+            document.querySelectorAll('#chamberFilter .chip').forEach(c => c.classList.remove('active'));
+            e.target.classList.add('active');
+            chamberFilterVal = e.target.dataset.chamber;
+            renderTable();
+        });
+
+        renderTable();
+    </script>
+<script src="../js/newsletter.js"></script>
+<script src="../js/account.js" data-position="top-right"></script>
+</body>
+</html>
