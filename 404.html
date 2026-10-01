@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page not found — Data Center Water Leaks</title>
+    <script>
+        // Old links (before pages/, docs/ and data/ folders) → new locations. Keeps shared links working.
+        (function () {
+            var MOVED = {
+                'map.html': 'pages/map.html', 'usage.html': 'pages/usage.html', 'offsets.html': 'pages/offsets.html',
+                'law.html': 'pages/law.html', 'terms.html': 'pages/terms.html',
+                'foia_opinion.pdf': 'docs/foia_opinion.pdf', 'foia_template.docx': 'docs/foia_template.docx',
+                'DataCenter_Water_Rate_Report.pdf': 'docs/DataCenter_Water_Rate_Report.pdf',
+                'DataCenter_Water_Funding_Report.pdf': 'docs/DataCenter_Water_Funding_Report.pdf',
+                'Model_Industrial_Water_Offset_Act.docx': 'docs/Model_Industrial_Water_Offset_Act.docx',
+                'Model_Water_Sustainability_Disclosure_Act.docx': 'docs/Model_Water_Sustainability_Disclosure_Act.docx',
+                'usdatacentermap.kmz': 'data/usdatacentermap.kmz',
+                'account.js': 'js/account.js', 'newsletter.js': 'js/newsletter.js'
+            };
+            var name = location.pathname.replace(/^\/+/, '');
+            if (MOVED[name]) location.replace('/' + MOVED[name] + location.search + location.hash);
+        })();
+    </script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f8fafc; color: #1e293b; min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; box-sizing: border-box; }
+        img { width: 110px; height: auto; margin-bottom: 14px; }
+        h1 { font-size: 1.6rem; margin: 0 0 8px; color: #0f172a; }
+        p { color: #64748b; margin: 0 0 22px; }
+        a { display: inline-block; background: #1e6fd9; color: #fff; text-decoration: none; font-weight: 700; padding: 11px 22px; border-radius: 999px; }
+    </style>
+</head>
+<body>
+    <div>
+        <img src="/logo.png" alt="Data Center Water Leaks">
+        <h1>Page not found</h1>
+        <p>The page you're looking for has moved or doesn't exist.</p>
+        <a href="/">Go to the dashboard</a>
+    </div>
+</body>
+</html>
