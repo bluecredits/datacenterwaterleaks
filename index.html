@@ -272,7 +272,7 @@
                 const current = Math.floor(progress * target);
                 element.innerText = current.toLocaleString();
                 if (progress < 1) requestAnimationFrame(update);
-                else element.innerText = target.toLocaleString();
+                else element.innerText = Math.round(target).toLocaleString();
             }
             requestAnimationFrame(update);
         }
